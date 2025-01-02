@@ -65,15 +65,47 @@ class Llama:
             and loads the pre-trained model and tokenizer.
         """
         assert 1 <= max_seq_len <= 8192, f"max_seq_len must be between 1 and 8192, got {max_seq_len}."
-        assert os.path.isdir(ckpt_dir), f"Checkpoint directory '{ckpt_dir}' does not exist."
-        assert os.path.isfile(tokenizer_path), f"Tokenizer file '{tokenizer_path}' does not exist."
-        
+        assert os.path.isdir(
+            ckpt_dir), f"Checkpoint directory '{ckpt_dir}' does not exist."
+        assert os.path.isfile(
+            tokenizer_path), f"Tokenizer file '{tokenizer_path}' does not exist."
+
+
+# Start Here
         if not torch.distributed.is_initialized():
-            torch.distributed.init_process_group("nccl")
+            if "RANK" in os.environ and "WORLD_SIZE" in os.environ:
+                torch.distributed.init_process_group("nccl")
+                print(
+                    f"Distributed mode initialized: RANK={os.environ['RANK']}, WORLD_SIZE={os.environ['WORLD_SIZE']}")
+            else:
+                # Initialize torch.distributed for single-GPU mode
+                os.environ["RANK"] = "0"
+                os.environ["WORLD_SIZE"] = "1"
+                # Set MASTER_ADDR for single-GPU
+                os.environ["MASTER_ADDR"] = "localhost"
+                # Set an arbitrary free port
+                os.environ["MASTER_PORT"] = "12355"
+                torch.distributed.init_process_group(
+                    backend="nccl", rank=0, world_size=1)
+                print(
+                    "Single-GPU mode: torch.distributed initialized with MASTER_ADDR=localhost and MASTER_PORT=12355.")
+
+        # Define world_size and ensure model_parallel_size matches it
+        world_size = int(os.environ.get("WORLD_SIZE", 1))
+
+        if model_parallel_size is None:
+            model_parallel_size = world_size  # Default model_parallel_size to match world_size
+
+        # Initialize model parallel
         if not model_parallel_is_initialized():
-            if model_parallel_size is None:
-                model_parallel_size = int(os.environ.get("WORLD_SIZE", 1))
             initialize_model_parallel(model_parallel_size)
+            print(
+                f"Model parallel initialized with size {model_parallel_size}.")
+
+        assert model_parallel_size == world_size, \
+            f"Loading a checkpoint for MP={model_parallel_size} but world size is {world_size}"
+
+# Stop Here
 
         local_rank = int(os.environ.get("LOCAL_RANK", 0))
         torch.cuda.set_device(local_rank)
@@ -156,9 +188,11 @@ class Llama:
         total_len = min(params.max_seq_len, max_gen_len + max_prompt_len)
 
         pad_id = self.tokenizer.pad_id
-        tokens = torch.full((bsz, total_len), pad_id, dtype=torch.long, device="cuda")
+        tokens = torch.full((bsz, total_len), pad_id,
+                            dtype=torch.long, device="cuda")
         for k, t in enumerate(prompt_tokens):
-            tokens[k, : len(t)] = torch.tensor(t, dtype=torch.long, device="cuda")
+            tokens[k, : len(t)] = torch.tensor(
+                t, dtype=torch.long, device="cuda")
         if logprobs:
             token_logprobs = torch.zeros_like(tokens, dtype=torch.float)
 
@@ -191,9 +225,9 @@ class Llama:
             )
             tokens[:, cur_pos] = next_token
             if logprobs:
-                token_logprobs[:, prev_pos + 1 : cur_pos + 1] = -F.cross_entropy(
+                token_logprobs[:, prev_pos + 1: cur_pos + 1] = -F.cross_entropy(
                     input=logits.transpose(1, 2),
-                    target=tokens[:, prev_pos + 1 : cur_pos + 1],
+                    target=tokens[:, prev_pos + 1: cur_pos + 1],
                     reduction="none",
                     ignore_index=pad_id,
                 )
@@ -210,10 +244,11 @@ class Llama:
         for i, toks in enumerate(tokens.tolist()):
             # cut to max gen len
             start = 0 if echo else len(prompt_tokens[i])
-            toks = toks[start : len(prompt_tokens[i]) + max_gen_len]
+            toks = toks[start: len(prompt_tokens[i]) + max_gen_len]
             probs = None
             if logprobs:
-                probs = token_logprobs[i][start : len(prompt_tokens[i]) + max_gen_len]
+                probs = token_logprobs[i][start: len(
+                    prompt_tokens[i]) + max_gen_len]
             # cut to after eos tok if any
             for stop_token in self.tokenizer.stop_tokens:
                 try:
@@ -257,7 +292,8 @@ class Llama:
         """
         if max_gen_len is None:
             max_gen_len = self.model.params.max_seq_len - 1
-        prompt_tokens = [self.tokenizer.encode(x, bos=True, eos=False) for x in prompts]
+        prompt_tokens = [self.tokenizer.encode(
+            x, bos=True, eos=False) for x in prompts]
         generation_tokens, generation_logprobs = self.generate(
             prompt_tokens=prompt_tokens,
             max_gen_len=max_gen_len,
