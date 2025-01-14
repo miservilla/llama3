@@ -1,0 +1,26 @@
+[
+    {
+        "abstract": "This study investigates the transport of glucose by SGLT1 in human intestinal cells.",
+        "question": "Does this abstract provide laboratory or experimental evidence that substrate X is transported by transporter protein Y?",
+        "confidence_score": 3,
+        "justification": "The abstract mentions investigation of glucose transport by SGLT1 but does not provide explicit experimental evidence or outcomes."
+    },
+    {
+        "abstract": "The effects of various inhibitors on non-specific diffusion were analyzed.",
+        "question": "Does this abstract provide laboratory or experimental evidence that substrate X is transported by transporter protein Y?",
+        "confidence_score": 0,
+        "justification": "The abstract focuses solely on non-specific diffusion and the effects of inhibitors, without mentioning substrate transport by a specific protein."
+    },
+    {
+        "abstract": "ATP-sensitive potassium (K (ATP) ) channels are multimeric protein complexes...",
+        "question": "Does this abstract provide laboratory or experimental evidence that substrate X is transported by transporter protein Y?",
+        "confidence_score": 4,
+        "justification": "The abstract identifies transporter proteins and their roles, but does not provide direct evidence of substrate transport."
+    },
+    {
+        "abstract": "Membrane transporters that use energy stored in sodium gradients to drive nutrients...",
+        "question": "Does this abstract provide laboratory or experimental evidence that substrate X is transported by transporter protein Y?",
+        "confidence_score": 7,
+        "justification": "The abstract discusses structural insights and galactose binding to vSGLT, strongly implying substrate transport, but lacks direct experimental transport evidence."
+    }
+]

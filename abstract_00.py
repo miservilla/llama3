@@ -7,6 +7,11 @@ import json
 import re
 import os
 
+
+# Set a custom port to avoid conflicts
+os.environ["MASTER_ADDR"] = "localhost"
+os.environ["MASTER_PORT"] = "29500"  # Choose an unused port number
+
 # Set default PyTorch settings
 torch.set_default_dtype(torch.float32)
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -17,7 +22,7 @@ print(f"Default device set to: {device}")
 def main(
     # ckpt_dir: str,
     # tokenizer_path: str,
-    temperature: float = 0.2,
+    temperature: float = 0.1,
     top_p: float = 0.9,
     max_seq_len: int = 2048,
     max_gen_len: int = 512,
@@ -41,7 +46,11 @@ def main(
 
     # Create prompts dynamically
     prompts = [
-        f"Abstract: {abstract} Question: Does this abstract provide laboratory or experimental evidence that substrate X is transported by transporter protein Y? Provide a confidence score (0-10) where 0 means no evidence and 10 means conclusive evidence. Also, briefly justify your rating."
+        f"""Abstract: {abstract} 
+        Question: Does this abstract provide laboratory or experimental evidence that substrate X is transported by transporter protein Y?
+        Respond in the exact format below:
+        - Confidence Score (0-10): [Your numeric score]
+        - Justification: [Concise justification based on the abstract]"""
         for abstract in abstracts
     ]
 
@@ -77,6 +86,7 @@ def main(
 
     # Process and save results
     results_list = []
+
     # for prompt, result in zip(prompts, results):
     #     response = result['generation']
     #     results_list.append({"prompt": prompt, "response": response})
@@ -87,19 +97,15 @@ def main(
     for prompt, result in zip(prompts, results):
         response = result['generation']
 
-        # Extract confidence score
+        # Extract confidence score (look for the first occurrence to avoid repeated matches)
         score_match = re.search(
-            r"(confidence score|rating|confidence level)[:=]?\s*(\d+)",
-            response,
-            re.IGNORECASE,
+            r"Confidence Score\s*[:=\(0-10\)\s*]*\[?(\d+)\]?", response, re.IGNORECASE
         )
-        confidence_score = score_match.group(2) if score_match else "N/A"
+        confidence_score = score_match.group(1) if score_match else "N/A"
 
-        # Extract justification
+        # Extract justification (assume the first occurrence is the most relevant)
         justification_match = re.search(
-            r"Justification: (.*?)(?:Answer:|$)",
-            response,
-            re.IGNORECASE | re.DOTALL,
+            r"Justification:\s*(.*?)(?:\n|$)", response, re.IGNORECASE | re.DOTALL
         )
         justification = justification_match.group(1).strip(
         ) if justification_match else "No justification provided."
