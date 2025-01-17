@@ -46,7 +46,7 @@ def main(
 
     # Create prompts dynamically
     prompts = [
-        f"""Abstract: {abstract} 
+        f"""Abstract: {abstract}
         Question: Does this abstract provide laboratory or experimental evidence that substrate X is transported by transporter protein Y?
         Respond in the exact format below:
         - Confidence Score (0-10): [Your numeric score]

@@ -26,7 +26,7 @@ about: Create a report to help us reproduce and fix the issue
 - Model: [eg: `meta-llama-3-8b-instruct`]
 - Using via huggingface?: [yes/no]
 - OS: [eg. Linux/Ubuntu, Windows]
-- GPU VRAM: 
+- GPU VRAM:
 - Number of GPUs:
 - GPU Make: [eg: Nvidia, AMD, Intel]
 

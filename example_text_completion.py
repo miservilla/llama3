@@ -49,7 +49,7 @@ def main(
     "A fast car will",
     "Who is Major Taunt?"
 ]
-    
+
     # Adjust max_batch_size dynamically based on the number of prompts
     adjusted_batch_size = max(len(prompts), max_batch_size)
 
@@ -79,7 +79,7 @@ def main(
     #     plush girafe => girafe peluche
     #     cheese =>""",
     # ]
-    
+
     results = generator.text_completion(
         prompts,
         max_gen_len=max_gen_len,
